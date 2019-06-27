@@ -20,13 +20,22 @@ def response_ok(body=b"This is a minimal response", mimetype=b"text/plain"):
     """
 
     # TODO: Implement response_ok
-    return b""
+    return b"\r\n".join([
+            b"HTTP/1.1 200 OK",
+            b"Content-Type: " + mimetype,
+            b"",
+            body
+            ])
 
 def response_method_not_allowed():
     """Returns a 405 Method Not Allowed response"""
 
     # TODO: Implement response_method_not_allowed
-    return b""
+    return b"\r\n:".join([
+            b"HTTP/1.1 405 Method Not Allowed",
+            b"",
+            b"You can't do that on this server!"
+              ])
 
 
 def response_not_found():
@@ -44,8 +53,10 @@ def parse_request(request):
     NotImplementedError if the method of the request is not GET.
     """
 
-    # TODO: implement parse_request
-    return ""
+    method, path, version = request.split("\r\n")[0].split(" ")
+    if method != "GET":
+        raise NotImplementedError
+    return path
 
 def response_path(path):
     """
@@ -93,6 +104,7 @@ def response_path(path):
 
 
 def server(log_buffer=sys.stderr):
+    #opens server socket on port 10000, starts listening for connections
     address = ('127.0.0.1', 10000)
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -102,6 +114,7 @@ def server(log_buffer=sys.stderr):
 
     try:
         while True:
+            # accept client connections, produce a response, close the connection
             print('waiting for a connection', file=log_buffer)
             conn, addr = sock.accept()  # blocking
             try:
@@ -109,16 +122,21 @@ def server(log_buffer=sys.stderr):
 
                 request = ''
                 while True:
+                    # retrieves request from client (web browser). The browser initiates
+                    # communication by sending http request
                     data = conn.recv(1024)
                     request += data.decode('utf8')
 
-                    if '\r\n\r\n' in request:
+                    if '\r\n\r\n' in request: # this server will only handle GET requests, which will end in
+                                                # a full blank line
                         break
 		
 
                 print("Request received:\n{}\n\n".format(request))
 
                 # TODO: Use parse_request to retrieve the path from the request.
+                try:
+                    path = parse_request(request)
 
                 # TODO: Use response_path to retrieve the content and the mimetype,
                 # based on the request path.
@@ -128,10 +146,12 @@ def server(log_buffer=sys.stderr):
                 # a NameError, then let response be a not_found response. Else,
                 # use the content and mimetype from response_path to build a 
                 # response_ok.
-                response = response_ok(
-                    body=b"Welcome to my web server",
-                    mimetype=b"text/plain"
-                )
+                    response = response_ok(
+                        body=b"Welcome to my web server",
+                        mimetype=b"text/plain"
+                    )
+                except NotImplementedError:
+                    response = response_method_not_allowed()
 
                 conn.sendall(response)
             except:
