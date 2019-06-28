@@ -2,7 +2,6 @@ import socket
 import sys
 import traceback
 import os
-import mimetypes
 
 def response_ok(body=b"This is a minimal response", mimetype=b"text/plain"):
     """
@@ -50,6 +49,7 @@ def response_not_found():
             b"File Not Found"
               ])
 
+
 def parse_request(request):
     """
     Given the content of an HTTP request, returns the path of that request.
@@ -61,7 +61,7 @@ def parse_request(request):
     method, path, version = request.split("\r\n")[0].split(" ")
     if method != "GET":
         raise NotImplementedError
-    return path.lstrip('/')
+    return path
 
 def response_path(path):
     """
@@ -100,11 +100,6 @@ def response_path(path):
         items = [path] + os.listdir(os.path.join(home_directory, path))
         content =', '.join(items).encode()
         mime_type = b"text/plain"
-    if os.path.isfile(os.path.join(home_directory, path)):
-        mime_type = mimetypes.guess_type(path)[0].encode()
-        with open(os.path.join(home_directory, path), 'br') as file:
-            content = file.read()
-        
     
     # TODO: Fill in the appropriate content and mime_type give the path.
     # See the assignment guidelines for help on "mapping mime-types", though
@@ -162,13 +157,6 @@ def server(log_buffer=sys.stderr):
                 # a NameError, then let response be a not_found response. Else,
                 # use the content and mimetype from response_path to build a 
                 # response_ok.
-                    if path == '':
-#                        response = response_ok(
-#                            body=b"Welcome to my web server",
-#                            mimetype=b"text/plain"
-#                        )
-                        path = '/webroot'
-                    
                     response = response_ok(
                         content,
                         mimetype
